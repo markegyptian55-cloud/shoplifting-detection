@@ -1,0 +1,20 @@
+# Core Deep Learning & Computer Vision
+torch>=2.0.0
+torchvision>=0.15.0
+opencv-python>=4.7.0
+numpy>=1.23.0
+
+# Data Engineering & Machine Learning
+pandas>=2.0.0
+scikit-learn>=1.2.0
+scipy>=1.10.0
+
+# Visualization & Telemetry
+matplotlib>=3.7.0
+seaborn>=0.12.0
+tqdm>=4.65.0
+
+# Production Deployment & Optimization
+onnx>=1.14.0
+onnxruntime>=1.16.0
+onnxscript>=0.1.0
