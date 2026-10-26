@@ -15,11 +15,13 @@ def export_to_onnx(
     output_path: str,
     dummy_input: Optional[torch.Tensor] = None,
     input_shape: Tuple[int, int, int, int, int] = (1, 16, 3, 224, 224),
+    input_name: str = "video_frames",
     opset_version: int = 14,
     device: Optional[torch.device] = None,
 ) -> str:
     """
     Exports PyTorch Spatiotemporal model to standard ONNX FP32 format.
+    Supports CNNs and Vision Transformers with dynamic batch dimensions.
     """
     device = device or torch.device("cpu")
     model = model.to(device)
@@ -36,10 +38,10 @@ def export_to_onnx(
         "export_params": True,
         "opset_version": opset_version,
         "do_constant_folding": True,
-        "input_names": ["video_clip"],
+        "input_names": [input_name],
         "output_names": ["logits"],
         "dynamic_axes": {
-            "video_clip": {0: "batch_size"},
+            input_name: {0: "batch_size"},
             "logits": {0: "batch_size"},
         },
     }

@@ -228,7 +228,8 @@ To maintain absolute continuity for any Agent, the project execution follows thi
 | 9 | `Cell 8.0` | Validation threshold search & test evaluation | Test Acc: 95.04%, Shoplifting F1: 0.9362, Macro F1: 0.9478, ROC-AUC: 0.9849 | **Completed** |
 | 10 | `Cell 9.0` | Production ONNX Export & Dynamic INT8 Quantization | FP32: 51.91 MB, INT8: 19.81 MB (61.8% compression, Parity < 1e-7, B=4 verified) | **Completed** |
 | 11 | `Baseline 2` | Scratch 3D CNN baseline notebook (`02_shoplifting_scratch_3dcnn.ipynb`) | Test Acc: 98.35%, Macro F1: 0.9826, Recall: 1.0000, ROC-AUC: 0.9988. FP32 (13.86MB) & INT8 (3.52MB) ONNX verified | **Completed** |
-| 12 | `Deliverable` | GitHub clean repo, README with comparative matrix & benchmarks | Final portfolio delivery & documentation | **Completed** |
+| 12 | Part 2 ViT | Hugging Face VideoMAE Foundation Model fine-tuning & INT8 quantization (`03-shoplifting-huggingface-videomae.ipynb`) | Test Acc: 99.17%, Macro F1: 0.9912, Precision: 100.00%, Recall: 97.83%, ROC-AUC: 1.0000. FP32 (333.86MB) & INT8 (88.09MB, -73.6%) verified | **Completed** |
+| 13 | Deliverable | Master Tri-Model Benchmark Matrix, modular `src/` architecture, enterprise README, 14/14 unit tests | Portfolio-ready, production export & parity verified | **Completed** |
 ### 4.5 Engineering Rationale & Architectural Q&A Ledger
 Any Agent must consult these established design choices before proposing changes:
 1. **Why Fixed Uniform $T = 16$ Frames?**

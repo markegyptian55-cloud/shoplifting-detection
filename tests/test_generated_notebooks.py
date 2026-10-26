@@ -23,6 +23,11 @@ NOTEBOOK_SPECS = {
         "expected_cells": 12,
         "expected_pairs": 6,
         "required_terms": ["Conv2Plus1D", "Shoplifting3DCNN_Scratch", "resolve_preprocessed_paths", "quantize_dynamic"]
+    },
+    "03-shoplifting-huggingface-videomae.ipynb": {
+        "expected_cells": 16,
+        "expected_pairs": 8,
+        "required_terms": ["VideoMAEForVideoClassification", "ShopliftingVideoMAE", "MCG-NJU/videomae-base", "pos_weight", "quantize_dynamic"]
     }
 }
 
@@ -94,6 +99,12 @@ class TestGeneratedNotebooks(unittest.TestCase):
         self.assertIn("FileNotFoundError", scratch_text)
         self.assertIn("rel_cache_path", scratch_text)
         self.assertIn("_safe_save_and_reload", scratch_text)
+
+        # 3. VideoMAE notebook must contain defensive path resolution and evaluation dashboard
+        videomae_text = (NOTEBOOKS_DIR / "03-shoplifting-huggingface-videomae.ipynb").read_text(encoding="utf-8")
+        self.assertIn("FileNotFoundError", videomae_text)
+        self.assertIn("evaluation_dashboard_videomae.png", videomae_text)
+        self.assertIn("ShopliftingVideoMAE", videomae_text)
 
         print("[Verification] All defensive contracts, anti-dummy assertions, and live telemetry verified.")
 

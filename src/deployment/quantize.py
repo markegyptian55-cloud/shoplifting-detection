@@ -44,17 +44,22 @@ def quantize_dynamic_int8(
     model_fp32_path: str,
     model_int8_path: str,
     weight_type: QuantType = QuantType.QUInt8,
+    per_channel: bool = False,
 ) -> str:
     """
-    Applies dynamic 8-bit integer quantization to reduce storage footprint by ~60-70%.
+    Applies dynamic 8-bit integer quantization to reduce storage footprint by ~60-75%.
     """
     _apply_windows_onnx_quant_fix()
     os.makedirs(os.path.dirname(os.path.abspath(model_int8_path)), exist_ok=True)
-    quantize_dynamic(
-        model_input=model_fp32_path,
-        model_output=model_int8_path,
-        weight_type=weight_type,
-    )
+    quantize_kwargs = {
+        "model_input": model_fp32_path,
+        "model_output": model_int8_path,
+        "weight_type": weight_type,
+    }
+    if per_channel:
+        quantize_kwargs["per_channel"] = True
+
+    quantize_dynamic(**quantize_kwargs)
     return model_int8_path
 
 
@@ -76,7 +81,8 @@ def verify_inference_parity(
         pt_out = pytorch_model(dummy_input).detach().cpu().numpy()
 
     session = ort.InferenceSession(onnx_path, providers=["CPUExecutionProvider"])
-    onnx_inputs = {"video_clip": dummy_input.cpu().numpy()}
+    input_name = session.get_inputs()[0].name
+    onnx_inputs = {input_name: dummy_input.cpu().numpy()}
     ort_out = session.run(None, onnx_inputs)[0]
 
     max_diff = float(np.max(np.abs(pt_out - ort_out)))

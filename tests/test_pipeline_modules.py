@@ -240,6 +240,29 @@ class TestShopliftingPipeline(unittest.TestCase):
                 os.remove(f)
         print(f"[Verification] Scratch 3D CNN ONNX FP32 & INT8 Parity verified (max diff: {max_diff:.8f})")
 
+    def test_10_videomae_quantized_onnx_inference(self):
+        """Verifies VideoMAE quantized INT8 ONNX production model inference and telemetry."""
+        from src.infer import ShopliftingInferenceEngine
+
+        onnx_int8_path = os.path.join("runs", "videomae", "shoplifting_videomae_int8.onnx")
+        if os.path.exists(onnx_int8_path):
+            file_size_mb = os.path.getsize(onnx_int8_path) / (1024 * 1024)
+            self.assertGreater(file_size_mb, 80.0)
+            self.assertLess(file_size_mb, 100.0)
+
+            engine = ShopliftingInferenceEngine(onnx_int8_path, threshold=0.37)
+            self.assertEqual(engine.input_name, "video_frames")
+            self.assertEqual(engine.threshold, 0.37)
+
+            dummy_clip = np.random.randn(1, 16, 3, 224, 224).astype(np.float32)
+            label, prob, latency_ms = engine.predict(dummy_clip)
+
+            self.assertIn(label, ["Shoplifting", "Normal Shopping"])
+            self.assertGreaterEqual(prob, 0.0)
+            self.assertLessEqual(prob, 1.0)
+            self.assertGreater(latency_ms, 0.0)
+            print(f"\n[Verification] VideoMAE INT8 ONNX verified ({file_size_mb:.2f} MB, Pred: {label}, Latency: {latency_ms:.1f}ms)")
+
 
 if __name__ == "__main__":
     unittest.main()

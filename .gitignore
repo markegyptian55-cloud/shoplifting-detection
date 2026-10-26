@@ -48,3 +48,7 @@ htmlcov/
 Thumbs.db
 desktop.ini
 
+# Project Specific Exclusions
+tasks/
+
+
