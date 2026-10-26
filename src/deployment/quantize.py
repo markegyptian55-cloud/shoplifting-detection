@@ -12,6 +12,34 @@ import onnxruntime as ort
 from onnxruntime.quantization import quantize_dynamic, QuantType
 
 
+def _apply_windows_onnx_quant_fix() -> None:
+    """
+    Guards against onnx 1.22+ external data canonicalization 'Access is denied' bug
+    during onnxruntime save_and_reload_model_with_shape_infer on Windows.
+    """
+    try:
+        import tempfile
+        from pathlib import Path
+        import onnx
+        import onnxruntime.quantization.quant_utils as qu
+        import onnxruntime.quantization.onnx_quantizer as oq
+
+        def _safe_save_and_reload(model):
+            with tempfile.TemporaryDirectory(prefix="ort.quant.") as quant_tmp_dir:
+                model_path = Path(quant_tmp_dir) / "model.onnx"
+                inferred_path = Path(quant_tmp_dir) / "model-inferred.onnx"
+                onnx.save_model(model, str(model_path))
+                onnx.shape_inference.infer_shapes_path(str(model_path), str(inferred_path))
+                inferred = onnx.load(str(inferred_path))
+                qu.add_infer_metadata(inferred)
+                return inferred
+
+        qu.save_and_reload_model_with_shape_infer = _safe_save_and_reload
+        oq.save_and_reload_model_with_shape_infer = _safe_save_and_reload
+    except Exception:
+        pass
+
+
 def quantize_dynamic_int8(
     model_fp32_path: str,
     model_int8_path: str,
@@ -20,6 +48,7 @@ def quantize_dynamic_int8(
     """
     Applies dynamic 8-bit integer quantization to reduce storage footprint by ~60-70%.
     """
+    _apply_windows_onnx_quant_fix()
     os.makedirs(os.path.dirname(os.path.abspath(model_int8_path)), exist_ok=True)
     quantize_dynamic(
         model_input=model_fp32_path,

@@ -13,6 +13,7 @@ import onnx
 def export_to_onnx(
     model: nn.Module,
     output_path: str,
+    dummy_input: Optional[torch.Tensor] = None,
     input_shape: Tuple[int, int, int, int, int] = (1, 16, 3, 224, 224),
     opset_version: int = 14,
     device: Optional[torch.device] = None,
@@ -24,7 +25,10 @@ def export_to_onnx(
     model = model.to(device)
     model.eval()
 
-    dummy_clip = torch.randn(*input_shape, dtype=torch.float32, device=device)
+    if dummy_input is None:
+        dummy_clip = torch.randn(*input_shape, dtype=torch.float32, device=device)
+    else:
+        dummy_clip = dummy_input.to(device)
 
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
 

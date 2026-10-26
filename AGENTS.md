@@ -193,23 +193,25 @@ To maintain absolute continuity for any Agent, the project execution follows thi
   * Deterministic seeds (`seed=42`), 2x Tesla T4 GPU detection (29 GB VRAM), dynamic `/kaggle/input/` dataset path detection.
 * `Cell 2.0` — **Video Dataset Discovery & Exploratory Data Analysis (EDA)** [COMPLETED]
   * Verified audit: 855 total clips (531 Normal / 324 Theft), 100% uniform resolution (`704x576`), median duration 12-14s (max 74s).
-* `Cell 2.1` — **Visual Inspection of Sample Clips & Frame Grids** [CURRENT STEP]
+* `Cell 2.1` — **Visual Inspection of Sample Clips & Frame Grids** [COMPLETED]
   * Render interactive video player for normal vs theft clips; display side-by-side $2 \times 8$ frame grids of extracted $T=16$ sequences.
-* `Cell 3.0` — **Leakage-Free Stratified Train / Val / Test Split**
-  * 70% Train (598 clips), 15% Val (128 clips), 15% Test (129 clips) grouped by video source/camera ID to prevent spatial background leakage.
-* `Cell 4.0` — **Fixed Uniform Frame Sampling & Offline Disk Caching Engine**
-  * Sample $T=16$ uniform frames per clip ($\text{indices} = \text{round}(\text{linspace}(0, N-1, 16))$); decode ONCE and cache to `/kaggle/working/cached_frames/`.
-* `Cell 5.0` — **Clip-Consistent Spatial Augmentation & PyTorch Video Dataset**
-  * `torchvision.transforms.v2` pipeline applying identical flip, crop, and jitter across all 16 frames in one call. Tensor contract: `(16, 3, 224, 224)`.
-* `Cell 6.0` — **Hybrid Spatiotemporal Architecture (ResNet18 + GRU)**
-  * Pretrained ResNet-18 (512-d spatial features) + 2-layer Bidirectional GRU (hidden dim: 256, dropout: 0.3) + Linear classification head.
-* `Cell 7.0` — **Two-Stage Training & Optimization Loop**
-  * Stage 1: Frozen backbone, train GRU head (`AdamW`, `lr = 1e-3`, `pos_weight = 1.64`).
-  * Stage 2: Unfreeze `layer4` with lower `lr` (`5e-5`), keeping backbone batch norm in eval mode. Best model checkpoint saved to disk.
-* `Cell 8.0` — **Validation Threshold Tuning & Rigorous Test Benchmark**
-  * Optimize threshold $p^* \in [0.1, 0.9]$ on validation F1 curve. Report final test Accuracy, Precision, Recall, F1, PR-AUC, and Confusion Matrix.
-* `Cell 9.0` — **Advanced Inference Upgrade: Sliding Window Multi-Clip Averaging**
-  * Evaluate long outlier clips ($> 20$s) using overlapping 16-frame sliding windows with logit averaging, demonstrating senior-level production polish.
+* `Cell 3.0` — **Leakage-Free Stratified Train / Val / Test Split & Camera Independence Audit** [COMPLETED]
+  * 70% Train (612 clips, 455 camera groups), 15% Val (122 clips, 91 camera groups), 15% Test (121 clips, 91 camera groups) grouped by video source/camera ID to prevent spatial background leakage. Mutually exclusive groups verified ($0$ overlap).
+* `Cell 4.0` — **Fixed Uniform Frame Sampling & Offline Disk Caching Engine** [COMPLETED]
+  * Sample $T=16$ uniform frames per clip ($\text{indices} = \text{round}(\text{linspace}(0, N-1, 16))$); decode ONCE and cache to `/kaggle/working/cached_frames/` (855 clips, 1.92 GB in 2m 8s).
+* `Cell 5.0` — **Clip-Consistent Spatial Augmentation & PyTorch Video Dataset** [COMPLETED]
+  * `torchvision.transforms.v2` pipeline applying identical flip, crop, and jitter across all 16 frames in one call. Batch tensor contract: `(32, 16, 3, 224, 224)`.
+* `Cell 6.0` — **Hybrid Spatiotemporal Architecture (ResNet18 + GRU)** [COMPLETED]
+  * Pretrained ResNet-18 (512-d spatial features) + 2-layer Bidirectional GRU (hidden dim: 256, dropout: 0.3) + Linear classification head (13.6M total params). Forward pass verified.
+* `Cell 7.0` — **Two-Stage Training & Optimization Loop** [COMPLETED]
+  * Stage 1 (8 Epochs): Frozen backbone, train GRU head (`AdamW`, `lr = 1e-3`, `pos_weight = 1.64`).
+  * Stage 2 (11 Epochs): Unfreeze `layer4` with lower `lr` (`5e-5`), keeping backbone batch norm in eval mode. Best model checkpoint saved at Stage 2 Epoch 6 (Val Loss: 0.2305, Val F1: 0.9474, Val Acc: 95.90%).
+* `Cell 8.0` — **Validation Threshold Tuning & Rigorous Test Benchmark** [COMPLETED]
+  * Optimal decision threshold tuned on validation: $p^* = 0.37$.
+  * Held-Out Test Set Benchmark ($N=121$ clips): Test Accuracy: **95.04%** (115/121), Shoplifting Precision: **91.67%**, Shoplifting Recall: **95.65%**, F1-Score (Shoplifting): **0.9362**, Macro F1-Score (Unweighted): **0.9478**, ROC-AUC: **0.9849**, PR-AUC: **0.9720**, Confusion Matrix: `[71, 4] / [2, 44]`.
+* `Cell 9.0` — **Production Model Export, ONNX Optimization & Parity Check** [COMPLETED]
+  * Exported FP32 ONNX (51.91 MB) with dynamic batch dimensions. Parity verified against PyTorch on batch size 1 ($\Delta = 0.00$) and batch size 4 ($\Delta < 10^{-7}$).
+  * Quantized INT8 ONNX (19.81 MB, 61.8% footprint reduction, Max diff: 0.0224). Production-ready for web browser and edge runtime.
 
 ### 4.4 Completed Milestones & Live Status Tracker
 
@@ -222,10 +224,11 @@ To maintain absolute continuity for any Agent, the project execution follows thi
 | 5 | `Cell 4.0` | Offline caching of $T=16$ uniform frames per video | 855 cached clips @ 224x224 (1.92 GB in 2m 8s) | **Completed** |
 | 6 | `Cell 5.0` | `torchvision.transforms.v2` consistent video dataset | Output tensor `(32, 16, 3, 224, 224)` | **Completed** |
 | 7 | `Cell 6.0` | ResNet18 + GRU temporal model definition | Forward pass verified: shape torch.Size([2]), 13.6M params | **Completed** |
-| 8 | `Cell 7.0` | Two-stage training (frozen head -> layer4 fine-tuning) | Best Val F1: 0.8696 (Val Acc: 90.16%), saved `best_model.pt` | **Completed** |
-| 9 | `Cell 8.0` | Validation threshold search & test evaluation | Test Acc: 92.56%, Macro F1: 0.9053, ROC-AUC: 0.9755 | **Completed** |
-| 10 | `Cell 9.0` | Production ONNX Export & Dynamic INT8 Quantization | FP32: 51.91 MB, INT8: 19.81 MB (61.8% compression, Parity < 1e-6) | **Completed** |
-| 11 | `Deliverable` | GitHub clean repo, README with figures and results | Final portfolio delivery | **Next Step** |
+| 8 | `Cell 7.0` | Two-stage training (frozen head -> layer4 fine-tuning) | Best Val Loss: 0.2305, Val Acc: 95.90%, Val F1: 0.9474 (saved `best_model.pt`) | **Completed** |
+| 9 | `Cell 8.0` | Validation threshold search & test evaluation | Test Acc: 95.04%, Shoplifting F1: 0.9362, Macro F1: 0.9478, ROC-AUC: 0.9849 | **Completed** |
+| 10 | `Cell 9.0` | Production ONNX Export & Dynamic INT8 Quantization | FP32: 51.91 MB, INT8: 19.81 MB (61.8% compression, Parity < 1e-7, B=4 verified) | **Completed** |
+| 11 | `Baseline 2` | Scratch 3D CNN baseline notebook (`02_shoplifting_scratch_3dcnn.ipynb`) | Test Acc: 98.35%, Macro F1: 0.9826, Recall: 1.0000, ROC-AUC: 0.9988. FP32 (13.86MB) & INT8 (3.52MB) ONNX verified | **Completed** |
+| 12 | `Deliverable` | GitHub clean repo, README with comparative matrix & benchmarks | Final portfolio delivery & documentation | **Completed** |
 ### 4.5 Engineering Rationale & Architectural Q&A Ledger
 Any Agent must consult these established design choices before proposing changes:
 1. **Why Fixed Uniform $T = 16$ Frames?**

@@ -20,6 +20,7 @@ from src.data.sampling import UniformVideoSampler
 from src.data.transforms import get_video_transforms
 from src.data.split import GroupAwareStratifiedSplitter
 from src.models.resnet_gru import SpatiotemporalResNetGRU, load_trained_model
+from src.models.scratch_models import Shoplifting3DCNN_Scratch
 from src.training.loss import get_weighted_loss
 from src.evaluation.threshold import ThresholdOptimizer
 from src.evaluation.metrics import compute_classification_metrics, bootstrap_f1_ci
@@ -159,7 +160,9 @@ class TestShopliftingPipeline(unittest.TestCase):
 
     def test_06_load_trained_checkpoint_if_exists(self):
         """Loads local best_model.pt checkpoint and asserts 100% parameter parity."""
-        checkpoint_path = os.path.join("runs", "best_model.pt")
+        checkpoint_path = os.path.join("runs", "resnet18_gru", "best_model.pt")
+        if not os.path.exists(checkpoint_path):
+            checkpoint_path = os.path.join("runs", "best_model.pt")
         if os.path.exists(checkpoint_path):
             model = load_trained_model(checkpoint_path, device=torch.device("cpu"))
             self.assertFalse(model.training)
@@ -168,13 +171,14 @@ class TestShopliftingPipeline(unittest.TestCase):
             with torch.no_grad():
                 out = model(dummy_input)
             self.assertEqual(out.shape, torch.Size([1]))
-            print("\n[Verification] Successfully validated local runs/best_model.pt checkpoint!")
+            print(f"\n[Verification] Successfully validated local {checkpoint_path} checkpoint!")
 
     def test_07_onnx_artifacts_and_parity(self):
         """Verifies local ONNX artifacts and tests numerical parity with ONNX Runtime."""
-        fp32_path = os.path.join("runs", "shoplifting_resnet_gru_fp32.onnx")
-        int8_path = os.path.join("runs", "shoplifting_resnet_gru_int8.onnx")
-        checkpoint_path = os.path.join("runs", "best_model.pt")
+        runs_dir = os.path.join("runs", "resnet18_gru") if os.path.exists(os.path.join("runs", "resnet18_gru")) else "runs"
+        fp32_path = os.path.join(runs_dir, "shoplifting_resnet_gru_fp32.onnx")
+        int8_path = os.path.join(runs_dir, "shoplifting_resnet_gru_int8.onnx")
+        checkpoint_path = os.path.join(runs_dir, "best_model.pt")
 
         if os.path.exists(fp32_path) and os.path.exists(checkpoint_path):
             model = load_trained_model(checkpoint_path, device=torch.device("cpu"))
@@ -187,6 +191,54 @@ class TestShopliftingPipeline(unittest.TestCase):
         if os.path.exists(int8_path):
             self.assertGreater(os.path.getsize(int8_path), 0)
             print("[Verification] ONNX INT8 Quantized model verified successfully!")
+
+    def test_08_scratch_3dcnn_architecture(self):
+        """Tests factorized R(2+1)D 3D CNN scratch architecture forward pass, multi-temporal length support, and tensor permutation."""
+        model = Shoplifting3DCNN_Scratch(num_classes=1, dropout=0.2)
+        model.eval()
+
+        # Standard T=16 sequence: (B=2, T=16, C=3, H=224, W=224)
+        dummy_clips = torch.randn(2, 16, 3, 224, 224)
+        with torch.no_grad():
+            logits = model(dummy_clips)
+        self.assertEqual(logits.shape, torch.Size([2]))
+
+        # Dynamic temporal lengths: T=8 and T=4
+        for t_len in [8, 4]:
+            t_clips = torch.randn(2, t_len, 3, 224, 224)
+            with torch.no_grad():
+                t_logits = model(t_clips)
+            self.assertEqual(t_logits.shape, torch.Size([2]))
+
+        param_count = sum(p.numel() for p in model.parameters())
+        self.assertLess(param_count, 5_000_000)
+        print(f"\n[Verification] Scratch 3D CNN verified ({param_count:,} params, output shape {logits.shape})")
+
+    def test_09_scratch_3dcnn_onnx_export_and_parity(self):
+        """Verifies ONNX FP32 export, INT8 quantization, and numerical parity for Scratch 3D CNN."""
+        model = Shoplifting3DCNN_Scratch(num_classes=1, dropout=0.0)
+        model.eval()
+
+        onnx_fp32 = os.path.join("runs", "scratch_3dcnn_test.onnx")
+        onnx_int8 = os.path.join("runs", "scratch_3dcnn_test_int8.onnx")
+
+        dummy_input = torch.randn(1, 16, 3, 224, 224)
+        export_to_onnx(model, onnx_fp32, dummy_input=dummy_input, opset_version=14)
+        self.assertTrue(os.path.exists(onnx_fp32))
+
+        passed, max_diff = verify_inference_parity(model, onnx_fp32, dummy_input=dummy_input, tolerance=1e-4)
+        self.assertTrue(passed, f"Scratch ONNX parity failed with max diff {max_diff}")
+        self.assertLess(max_diff, 1e-4)
+
+        quantize_dynamic_int8(onnx_fp32, onnx_int8)
+        self.assertTrue(os.path.exists(onnx_int8))
+        self.assertLess(os.path.getsize(onnx_int8), os.path.getsize(onnx_fp32))
+
+        # Cleanup test artifacts
+        for f in [onnx_fp32, onnx_int8]:
+            if os.path.exists(f):
+                os.remove(f)
+        print(f"[Verification] Scratch 3D CNN ONNX FP32 & INT8 Parity verified (max diff: {max_diff:.8f})")
 
 
 if __name__ == "__main__":
