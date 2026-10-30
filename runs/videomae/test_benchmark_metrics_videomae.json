@@ -1,0 +1,17 @@
+{
+    "optimal_threshold": 0.13,
+    "test_accuracy": 0.7291666666666666,
+    "test_macro_f1": 0.7289849547535513,
+    "theft_precision": 0.7555555555555555,
+    "theft_recall": 0.6938775510204082,
+    "test_specificity": 0.7659574468085106,
+    "roc_auc": 0.8545375597047329,
+    "pr_auc": 0.8674251648011234,
+    "ece": 0.2055,
+    "confusion_matrix": {
+        "tn": 36,
+        "fp": 11,
+        "fn": 15,
+        "tp": 34
+    }
+}

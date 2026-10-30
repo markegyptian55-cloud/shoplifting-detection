@@ -42,7 +42,11 @@ class ShopliftingVideoDataset(Dataset):
 
         # 1. Try loading cached numpy array first for speed
         loaded_frames = None
-        if self.cache_dir and "cache_path" in row and os.path.exists(str(row["cache_path"])):
+        if self.cache_dir and "filename" in row:
+            candidate_cache = os.path.join(self.cache_dir, f"{row['filename']}.npy")
+            if os.path.exists(candidate_cache):
+                loaded_frames = np.load(candidate_cache)
+        elif self.cache_dir and "cache_path" in row and os.path.exists(str(row["cache_path"])):
             loaded_frames = np.load(str(row["cache_path"]))
         elif self.cache_dir:
             expected_cache = os.path.join(self.cache_dir, f"clip_{idx:04d}.npy")
@@ -51,8 +55,10 @@ class ShopliftingVideoDataset(Dataset):
 
         # 2. Fallback to on-the-fly decoding if not cached
         if loaded_frames is None:
-            video_path = row["video_path"]
-            loaded_frames = self.sampler.decode_and_sample(video_path)
+            video_path = row.get("filepath", row.get("video_path"))
+            if video_path is None:
+                raise KeyError(f"Neither 'filepath' nor 'video_path' found in metadata row: {list(row.keys())}")
+            loaded_frames = self.sampler.decode_and_sample(str(video_path))
 
         # loaded_frames shape: (T, H, W, C) in uint8 [0, 255]
         # Convert to tensor and permute to (T, C, H, W)

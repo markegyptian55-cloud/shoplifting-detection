@@ -50,5 +50,9 @@ desktop.ini
 
 # Project Specific Exclusions
 tasks/
+scratch/
+tests/
+.agents/
+*graphify-out/
 
 

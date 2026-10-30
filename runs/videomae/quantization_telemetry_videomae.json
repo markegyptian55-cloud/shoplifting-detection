@@ -1,0 +1,13 @@
+{
+    "fp32_artifact": "shoplifting_videomae_fp32.onnx",
+    "fp32_size_mb": 333.86,
+    "fp32_test_acc": 0.7292,
+    "fp32_test_macro_f1": 0.729,
+    "int8_artifact": "shoplifting_videomae_int8.onnx",
+    "int8_size_mb": 88.09,
+    "int8_test_acc": 0.7188,
+    "int8_test_macro_f1": 0.7185,
+    "footprint_reduction_pct": 73.61,
+    "accuracy_retention_pct": 98.57,
+    "average_cpu_latency_ms": 1907.0
+}

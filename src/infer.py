@@ -101,7 +101,9 @@ class ShopliftingInferenceEngine:
             self.threshold = threshold
         elif "scratch" in model_path.lower():
             self.threshold = 0.64
-        elif "resnet" in model_path.lower() or "videomae" in model_path.lower():
+        elif "resnet" in model_path.lower():
+            self.threshold = 0.43
+        elif "videomae" in model_path.lower():
             self.threshold = 0.37
         else:
             self.threshold = 0.50
@@ -141,7 +143,7 @@ def main():
     parser.add_argument("--model", type=str, default="runs/scratch_3dcnn/shoplifting_3dcnn_scratch_int8.onnx",
                         help="Path to ONNX model artifact")
     parser.add_argument("--threshold", type=float, default=None,
-                        help="Decision threshold (default: 0.64 for Scratch 3D CNN, 0.37 for ResNet-GRU)")
+                        help="Decision threshold (default: 0.64 for Scratch 3D CNN, 0.43 for ResNet-GRU, 0.37 for VideoMAE)")
 
     args = parser.parse_args()
 

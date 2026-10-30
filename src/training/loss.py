@@ -7,8 +7,16 @@ import torch
 import torch.nn as nn
 
 
+def compute_pos_weight(num_normal: int, num_theft: int) -> float:
+    """
+    Computes exact balanced pos_weight ratio: num_negative / num_positive.
+    For clean deduplicated training set (219 normal, 226 theft), pos_weight = 0.9690.
+    """
+    return float(num_normal) / float(max(num_theft, 1))
+
+
 def get_weighted_loss(
-    pos_weight_value: float = 1.64,
+    pos_weight_value: float = 0.9690,
     device: Optional[torch.device] = None,
 ) -> nn.BCEWithLogitsLoss:
     """
