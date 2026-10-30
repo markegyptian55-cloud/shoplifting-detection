@@ -1,4 +1,4 @@
 Architecture,Weights,Parameters,Accuracy,Macro F1,Precision,Recall,ROC-AUC,Disk Size (FP32),Inference Speed
 VideoMAE Foundation Model (Part 2),Self-Supervised Kinetics-400,86.24 M,0.7292,0.729,0.7556,0.6939,0.8545,333.9 MB,GPU ~65ms | CPU ~1907ms
-Factorized R(2+1)D 3D CNN (Part 1 Scratch),None (100% From Scratch),3.47 M,0.9792,0.9791,0.9608,1.0,0.9944,13.9 MB,Ultra-Fast (~15ms)
+Factorized R(2+1)D 3D CNN (Part 1 Scratch),None (100% From Scratch),3.63 M,0.9792,0.9791,0.9608,1.0,0.9944,13.9 MB,Ultra-Fast (~15ms)
 ResNet18 + Bi-GRU (Part 1 Baseline),ImageNet-1K Pretrained,13.67 M,0.6875,0.6667,0.913,0.4286,0.8218,52.2 MB,Fast (~35ms)
